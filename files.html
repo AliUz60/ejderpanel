@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dosya Yöneticisi - EjderMC</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #1e1e1e; padding: 15px; border-radius: 10px; border-bottom: 2px solid #00a8ff; }
+        .btn { padding: 8px 15px; border-radius: 5px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+        .btn-back { background: #444; color: white; }
+        .btn-upload { background: #00a8ff; color: white; }
+        .btn-delete { background: #ff4d4d; color: white; font-size: 12px; }
+        .btn-delete:hover { background: #ff0000; }
+        
+        .upload-card { background: #1e1e1e; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px dashed #444; }
+        
+        .file-list { background: #1e1e1e; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .file-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid #333; }
+        .file-item:hover { background: #252525; }
+        .file-info { display: flex; align-items: center; text-decoration: none; color: #00a8ff; flex-grow: 1; }
+        .icon { margin-right: 15px; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="btn btn-back">⬅ Sunucu Seçimi</a>
+            <span>Konum: <strong>/{{ current_path }}</strong></span>
+        </div>
+
+        <div class="upload-card">
+            <form action="/upload/{{ current_path }}" method="post" enctype="multipart/form-data">
+                <label>Yeni Dosya Yükle: </label>
+                <input type="file" name="file" style="margin: 0 10px;">
+                <button type="submit" class="btn btn-upload">YÜKLE</button>
+            </form>
+        </div>
+
+        <div class="file-list">
+            {% for item in items %}
+            <div class="file-item">
+                <a href="/files/{{ current_path }}/{{ item.name }}" class="file-info">
+                    <span class="icon">{{ "📁" if item.is_dir else "📄" }}</span>
+                    <span>{{ item.name }}</span>
+                </a>
+                <a href="/delete/{{ current_path }}/{{ item.name }}" class="btn btn-delete" onclick="return confirm('Bu dosyayı/klasörü kalıcı olarak silmek istediğine emin misin?')">SİL</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

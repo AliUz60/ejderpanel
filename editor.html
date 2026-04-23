@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Düzenle - EjderMC</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; padding: 20px; }
+        .editor-box { max-width: 1100px; margin: auto; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e1e1e; padding: 15px; border-radius: 8px 8px 0 0; border-bottom: 2px solid #27ae60; }
+        textarea { width: 100%; height: 600px; background: #1e1e1e; color: #f1f1f1; border: 1px solid #333; border-top: none; padding: 15px; font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; outline: none; resize: vertical; box-sizing: border-box; }
+        .btn-save { background: #27ae60; color: white; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .btn-save:hover { background: #2ecc71; }
+        .btn-cancel { background: #444; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="editor-box">
+        <form action="/save/{{ path }}" method="post">
+            <div class="header">
+                <h3>Düzenleniyor: /{{ path }}</h3>
+                <div>
+                    <a href="javascript:history.back()" class="btn-cancel">Vazgeç</a>
+                    <button type="submit" class="btn-save">💾 KAYDET</button>
+                </div>
+            </div>
+            <textarea name="content">{{ content }}</textarea>
+        </form>
+    </div>
+</body>
+</html>

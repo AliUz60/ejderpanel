@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>EjderMC Panel</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; margin: 0; }
+        .navbar { background: #1f1f1f; padding: 20px; border-bottom: 3px solid #00a8ff; font-size: 24px; font-weight: bold; }
+        .container { display: flex; justify-content: center; flex-wrap: wrap; gap: 25px; margin-top: 50px; padding: 20px; }
+        .server-card { background: #1e1e1e; border: 2px solid #333; padding: 40px; border-radius: 20px; cursor: pointer; transition: 0.3s; width: 200px; text-decoration: none; color: white; }
+        .server-card:hover { border-color: #00a8ff; background: #252525; transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .icon { font-size: 60px; margin-bottom: 15px; display: block; }
+        h3 { margin: 10px 0 0; font-size: 22px; }
+    </style>
+</head>
+<body>
+    <div class="navbar">EJDER MC - SUNUCU YÖNETİM PANELİ</div>
+    <h1>Sunucu Seçin</h1>
+    <div class="container">
+        {% for server in servers %}
+        <a href="/files/{{ server }}" class="server-card">
+            <span class="icon">📁</span>
+            <h3>{{ server }}</h3>
+        </a>
+        {% endfor %}
+    </div>
+</body>
+</html>
