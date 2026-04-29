@@ -2,77 +2,67 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>EjderMC | Senkronize Uptime</title>
+    <title>EjderMC | Merkezi Uptime</title>
     <style>
-        body { background: #050505; color: #00d2ff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { text-align: center; border: 2px solid #00d2ff; padding: 40px; border-radius: 20px; box-shadow: 0 0 30px rgba(0, 210, 255, 0.4); background: #000; }
-        h1 { font-size: 1rem; letter-spacing: 3px; color: #fff; margin-bottom: 20px; }
-        #timer { font-size: 4rem; font-weight: bold; text-shadow: 0 0 20px #00d2ff; font-family: 'Courier New', monospace; }
-        .sync-light { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 10px #00ff00; }
+        body { background: #000; color: #00fbff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { text-align: center; border: 2px solid #00fbff; padding: 50px; border-radius: 30px; box-shadow: 0 0 40px rgba(0, 251, 255, 0.2); }
+        #timer { font-size: 5rem; font-weight: bold; text-shadow: 0 0 20px #00fbff; font-family: monospace; }
+        .text { color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>SİSTEM ÇALIŞMA SÜRESİ</h1>
+    <div class="box">
+        <div class="text">Sistem Aktiflik Süresi</div>
         <div id="timer">00:00:00</div>
-        <div style="margin-top:20px; font-size: 0.7rem;">
-            <span class="sync-light"></span> CANLI SENKRONİZASYON AKTİF
-        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // Senin resimdeki bilgilerini buraya işledim
         const firebaseConfig = {
             apiKey: "AIzaSyDvVy9wAgsZEOZEXLkz3s-0Nq7LqsWUZOA",
             authDomain: "server-af41f.firebaseapp.com",
             projectId: "server-af41f",
-            databaseURL: "https://server-af41f-default-rtdb.europe-west1.firebasedatabase.app",
+            storageBucket: "server-af41f.firebasestorage.app",
+            messagingSenderId: "194089980508",
             appId: "1:194089980508:web:f27dd26e549c68ee1d4c99"
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const uptimeRef = ref(db, 'last_ping');
+        const db = getFirestore(app);
+        const docRef = doc(db, "uptime", "status");
 
-        // BOT DÜRTÜNCE: serverTimestamp kullanarak her cihazın kendi saatini değil, Google sunucusunun saatini baz alıyoruz.
+        // BOT DÜRTME: Linkin sonuna ?ping=true eklersen süre herkes için sıfırlanır
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('ping') === 'true') {
-            set(uptimeRef, Date.now()); 
+            setDoc(docRef, { last_ping: Date.now() }, { merge: true });
         }
 
-        let serverLastPing = 0;
+        let lastPing = 0;
 
-        // Firebase verisi değiştiği anda tüm sekmelerde anında güncellenir
-        onValue(uptimeRef, (snapshot) => {
-            serverLastPing = snapshot.val();
-            console.log("Veri güncellendi: ", serverLastPing);
+        // CANLI VERİ: Firebase'den süreyi çek (Herkes aynı veriyi alır)
+        onSnapshot(docRef, (doc) => {
+            if (doc.exists()) {
+                lastPing = doc.data().last_ping;
+            }
         });
 
-        function updateDisplay() {
-            if (!serverLastPing) return;
-
-            // Her tarayıcı kendi içindeki saat farkını Firebase'e göre dengeler
-            const now = Date.now();
-            const diff = Math.floor((now - serverLastPing) / 1000);
-
-            if (diff < 0) {
-                document.getElementById('timer').innerText = "00:00:00";
-                return;
-            }
-
+        // EKRAN GÜNCELLEME: Saniyeyi saydır
+        setInterval(() => {
+            if (!lastPing) return;
+            
+            const diff = Math.floor((Date.now() - lastPing) / 1000);
             const h = Math.floor(diff / 3600).toString().padStart(2, '0');
             const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
             const s = (diff % 60).toString().padStart(2, '0');
-
+            
             document.getElementById('timer').innerText = `${h}:${m}:${s}`;
-        }
+        }, 1000);
 
-        // 1 saniyede bir ekranı tazele (Sayfa yenilenmiş gibi olur ama veri kaybolmaz)
-        setInterval(updateDisplay, 1000);
-
+        // Sayfa yenilense de süre bozulmaz, çünkü veri Firebase'de!
     </script>
 </body>
 </html>
