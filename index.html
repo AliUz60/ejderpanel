@@ -2,94 +2,105 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Uptime Monitor</title>
+    <title>EjderMC | Uptime Monitor</title>
     <style>
         body {
             background-color: #050505;
-            color: #00ff9d;
-            font-family: 'Courier New', Courier, monospace;
+            color: #00d2ff;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            overflow: hidden;
         }
 
-        .monitor-card {
-            border: 2px solid #00ff9d;
+        .container {
+            text-align: center;
+            border: 2px solid #00d2ff;
             padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 0 25px #00ff9d44, inset 0 0 10px #00ff9d22;
-            text-align: center;
-            background: rgba(0, 255, 157, 0.05);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+            background: rgba(0, 0, 0, 0.8);
         }
 
-        h1 { font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 20px; color: #fff; }
-        
+        h1 {
+            font-size: 1rem;
+            letter-spacing: 3px;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
         #timer {
-            font-size: 3.5rem;
+            font-size: 4rem;
             font-weight: bold;
-            text-shadow: 0 0 15px #00ff9d;
-            margin: 10px 0;
+            text-shadow: 0 0 20px #00d2ff;
+            font-family: 'Courier New', monospace;
         }
 
-        .info { color: #888; font-size: 0.8rem; margin-top: 15px; }
+        .status {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #555;
+        }
     </style>
 </head>
 <body>
 
-    <div class="monitor-card">
-        <h1>SISTEM AKTIFLIK SURESI</h1>
+    <div class="container">
+        <h1>SİSTEM ÇALIŞMA SÜRESİ</h1>
         <div id="timer">00:00:00</div>
-        <div class="info">Son bot etkileşiminden beri geçen süre</div>
+        <div class="status" id="status-text">Veri bekleniyor...</div>
     </div>
 
-    <script>
-        // ÖNEMLİ: 'kendi-ozel-anahtarin' kısmını kendine göre değiştir (rastgele harfler yaz)
-        const key = "ejder-uptime-project-2026"; 
-        const apiURL = `https://api.countapi.xyz/hit/uptimebot/${key}`;
-        const statsURL = `https://api.countapi.xyz/get/uptimebot/${key}`;
+    <script type="module">
+        // Firebase Modüllerini Yüklüyoruz
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        let lastHitTime = Date.now();
+        // Senin verdiğin Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDvVy9wAgsZEOZEXLkz3s-0Nq7LqsWUZOA",
+            authDomain: "server-af41f.firebaseapp.com",
+            projectId: "server-af41f",
+            databaseURL: "https://server-af41f-default-rtdb.europe-west1.firebasedatabase.app", // NOT: Database URL'ini Firebase panelinden kontrol et, genelde budur.
+            storageBucket: "server-af41f.firebasestorage.app",
+            messagingSenderId: "194089980508",
+            appId: "1:194089980508:web:f27dd26e549c68ee1d4c99"
+        };
 
-        // 1. Botun yaptığı işi simüle eden veya son giriş vaktini güncelleyen fonksiyon
-        async function updateTimestamp() {
-            try {
-                // Bu istek atıldığında sayaç internette sıfırlanmış gibi olur
-                const res = await fetch(apiURL);
-                const data = await res.json();
-                lastHitTime = Date.now(); // Zamanı güncelle
-                localStorage.setItem('last_uptime_hit', lastHitTime);
-            } catch (e) {
-                console.log("Hizmet şu an meşgul.");
-            }
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const uptimeRef = ref(db, 'last_ping');
+
+        // 1. DÜRTME MANTIĞI: Eğer linkin sonuna ?ping=true eklersen sayaç sıfırlanır
+        // C++ botun bu adresi çağırmalı: https://siten.vercel.app/?ping=true
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('ping') === 'true') {
+            set(uptimeRef, Date.now());
+            document.getElementById('status-text').innerText = "Sistem dürtüldü!";
         }
 
-        // Sayfa her açıldığında zamanı kontrol et
-        if(localStorage.getItem('last_uptime_hit')) {
-            lastHitTime = parseInt(localStorage.getItem('last_uptime_hit'));
-        } else {
-            updateTimestamp();
-        }
+        // 2. VERİ ÇEKME MANTIĞI: Firebase'deki süreyi herkes için aynı anda çeker
+        let lastPingTime = 0;
+        onValue(uptimeRef, (snapshot) => {
+            lastPingTime = snapshot.val();
+            document.getElementById('status-text').innerText = "Canlı veri bağlandı.";
+        });
 
-        // Ekranda saniyeyi saydıran döngü
-        function runClock() {
+        // 3. EKRAN GÜNCELLEME: Saniyeyi saniye saniye arttırır
+        setInterval(() => {
+            if (!lastPingTime) return;
+
             const now = Date.now();
-            const diff = Math.floor((now - lastHitTime) / 1000);
+            const diff = Math.floor((now - lastPingTime) / 1000);
 
             const h = Math.floor(diff / 3600).toString().padStart(2, '0');
             const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
             const s = (diff % 60).toString().padStart(2, '0');
 
             document.getElementById('timer').innerText = `${h}:${m}:${s}`;
-        }
-
-        setInterval(runClock, 1000);
-
-        // BOTUN YAPACAĞI İŞ: 
-        // Senin C++ botun bu sayfaya girdiğinde, sayfa otomatik olarak updateTimestamp() çalıştıracak
-        // ve süre herkes için sıfırlanacak.
+        }, 1000);
     </script>
 </body>
 </html>
