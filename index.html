@@ -2,78 +2,94 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Giriş Sayacı</title>
+    <title>Uptime Monitor</title>
     <style>
         body {
-            background-color: #0a0a0a;
-            color: #00d2ff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #050505;
+            color: #00ff9d;
+            font-family: 'Courier New', Courier, monospace;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
+            overflow: hidden;
         }
 
-        .container {
+        .monitor-card {
+            border: 2px solid #00ff9d;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 0 25px #00ff9d44, inset 0 0 10px #00ff9d22;
             text-align: center;
-            border: 2px solid #00d2ff;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px #00d2ff88;
+            background: rgba(0, 255, 157, 0.05);
         }
 
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        #counter {
-            font-size: 2.5rem;
+        h1 { font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 20px; color: #fff; }
+        
+        #timer {
+            font-size: 3.5rem;
             font-weight: bold;
-            text-shadow: 0 0 10px #00d2ff;
+            text-shadow: 0 0 15px #00ff9d;
+            margin: 10px 0;
         }
 
-        .label {
-            color: #fff;
-            font-size: 0.9rem;
-            margin-top: 5px;
-        }
+        .info { color: #888; font-size: 0.8rem; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>SİTE DURUMU</h1>
-        <div id="counter">00:00:00</div>
-        <div class="label">Önce Aktif Edildi</div>
+    <div class="monitor-card">
+        <h1>SISTEM AKTIFLIK SURESI</h1>
+        <div id="timer">00:00:00</div>
+        <div class="info">Son bot etkileşiminden beri geçen süre</div>
     </div>
 
     <script>
-        // Sayfanın yüklendiği anı milisaniye olarak alıyoruz
-        const loginTime = new Date().getTime();
+        // ÖNEMLİ: 'kendi-ozel-anahtarin' kısmını kendine göre değiştir (rastgele harfler yaz)
+        const key = "ejder-uptime-project-2026"; 
+        const apiURL = `https://api.countapi.xyz/hit/uptimebot/${key}`;
+        const statsURL = `https://api.countapi.xyz/get/uptimebot/${key}`;
 
-        function updateCounter() {
-            const currentTime = new Date().getTime();
-            const difference = currentTime - loginTime;
+        let lastHitTime = Date.now();
 
-            // Milisaniyeyi saniye, dakika ve saate çevirme
-            let seconds = Math.floor((difference / 1000) % 60);
-            let minutes = Math.floor((difference / (1000 * 60)) % 60);
-            let hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
-
-            // Sayıları 00 şeklinde formatlama
-            const format = (num) => num < 10 ? '0' + num : num;
-
-            // Ekrana yazdırma
-            document.getElementById('counter').innerText = 
-                format(hours) + ":" + format(minutes) + ":" + format(seconds);
+        // 1. Botun yaptığı işi simüle eden veya son giriş vaktini güncelleyen fonksiyon
+        async function updateTimestamp() {
+            try {
+                // Bu istek atıldığında sayaç internette sıfırlanmış gibi olur
+                const res = await fetch(apiURL);
+                const data = await res.json();
+                lastHitTime = Date.now(); // Zamanı güncelle
+                localStorage.setItem('last_uptime_hit', lastHitTime);
+            } catch (e) {
+                console.log("Hizmet şu an meşgul.");
+            }
         }
 
-        // Her 1 saniyede (1000ms) bir güncelle
-        setInterval(updateCounter, 1000);
+        // Sayfa her açıldığında zamanı kontrol et
+        if(localStorage.getItem('last_uptime_hit')) {
+            lastHitTime = parseInt(localStorage.getItem('last_uptime_hit'));
+        } else {
+            updateTimestamp();
+        }
+
+        // Ekranda saniyeyi saydıran döngü
+        function runClock() {
+            const now = Date.now();
+            const diff = Math.floor((now - lastHitTime) / 1000);
+
+            const h = Math.floor(diff / 3600).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+
+            document.getElementById('timer').innerText = `${h}:${m}:${s}`;
+        }
+
+        setInterval(runClock, 1000);
+
+        // BOTUN YAPACAĞI İŞ: 
+        // Senin C++ botun bu sayfaya girdiğinde, sayfa otomatik olarak updateTimestamp() çalıştıracak
+        // ve süre herkes için sıfırlanacak.
     </script>
 </body>
 </html>
