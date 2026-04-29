@@ -2,47 +2,13 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>EjderMC | Uptime Monitor</title>
+    <title>EjderMC | Senkronize Uptime</title>
     <style>
-        body {
-            background-color: #050505;
-            color: #00d2ff;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            text-align: center;
-            border: 2px solid #00d2ff;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
-            background: rgba(0, 0, 0, 0.8);
-        }
-
-        h1 {
-            font-size: 1rem;
-            letter-spacing: 3px;
-            color: #fff;
-            margin-bottom: 20px;
-        }
-
-        #timer {
-            font-size: 4rem;
-            font-weight: bold;
-            text-shadow: 0 0 20px #00d2ff;
-            font-family: 'Courier New', monospace;
-        }
-
-        .status {
-            margin-top: 15px;
-            font-size: 0.8rem;
-            color: #555;
-        }
+        body { background: #050505; color: #00d2ff; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { text-align: center; border: 2px solid #00d2ff; padding: 40px; border-radius: 20px; box-shadow: 0 0 30px rgba(0, 210, 255, 0.4); background: #000; }
+        h1 { font-size: 1rem; letter-spacing: 3px; color: #fff; margin-bottom: 20px; }
+        #timer { font-size: 4rem; font-weight: bold; text-shadow: 0 0 20px #00d2ff; font-family: 'Courier New', monospace; }
+        .sync-light { width: 10px; height: 10px; background: #00ff00; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 0 10px #00ff00; }
     </style>
 </head>
 <body>
@@ -50,22 +16,20 @@
     <div class="container">
         <h1>SİSTEM ÇALIŞMA SÜRESİ</h1>
         <div id="timer">00:00:00</div>
-        <div class="status" id="status-text">Veri bekleniyor...</div>
+        <div style="margin-top:20px; font-size: 0.7rem;">
+            <span class="sync-light"></span> CANLI SENKRONİZASYON AKTİF
+        </div>
     </div>
 
     <script type="module">
-        // Firebase Modüllerini Yüklüyoruz
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Senin verdiğin Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyDvVy9wAgsZEOZEXLkz3s-0Nq7LqsWUZOA",
             authDomain: "server-af41f.firebaseapp.com",
             projectId: "server-af41f",
-            databaseURL: "https://server-af41f-default-rtdb.europe-west1.firebasedatabase.app", // NOT: Database URL'ini Firebase panelinden kontrol et, genelde budur.
-            storageBucket: "server-af41f.firebasestorage.app",
-            messagingSenderId: "194089980508",
+            databaseURL: "https://server-af41f-default-rtdb.europe-west1.firebasedatabase.app",
             appId: "1:194089980508:web:f27dd26e549c68ee1d4c99"
         };
 
@@ -73,34 +37,42 @@
         const db = getDatabase(app);
         const uptimeRef = ref(db, 'last_ping');
 
-        // 1. DÜRTME MANTIĞI: Eğer linkin sonuna ?ping=true eklersen sayaç sıfırlanır
-        // C++ botun bu adresi çağırmalı: https://siten.vercel.app/?ping=true
+        // BOT DÜRTÜNCE: serverTimestamp kullanarak her cihazın kendi saatini değil, Google sunucusunun saatini baz alıyoruz.
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('ping') === 'true') {
-            set(uptimeRef, Date.now());
-            document.getElementById('status-text').innerText = "Sistem dürtüldü!";
+            set(uptimeRef, Date.now()); 
         }
 
-        // 2. VERİ ÇEKME MANTIĞI: Firebase'deki süreyi herkes için aynı anda çeker
-        let lastPingTime = 0;
+        let serverLastPing = 0;
+
+        // Firebase verisi değiştiği anda tüm sekmelerde anında güncellenir
         onValue(uptimeRef, (snapshot) => {
-            lastPingTime = snapshot.val();
-            document.getElementById('status-text').innerText = "Canlı veri bağlandı.";
+            serverLastPing = snapshot.val();
+            console.log("Veri güncellendi: ", serverLastPing);
         });
 
-        // 3. EKRAN GÜNCELLEME: Saniyeyi saniye saniye arttırır
-        setInterval(() => {
-            if (!lastPingTime) return;
+        function updateDisplay() {
+            if (!serverLastPing) return;
 
+            // Her tarayıcı kendi içindeki saat farkını Firebase'e göre dengeler
             const now = Date.now();
-            const diff = Math.floor((now - lastPingTime) / 1000);
+            const diff = Math.floor((now - serverLastPing) / 1000);
+
+            if (diff < 0) {
+                document.getElementById('timer').innerText = "00:00:00";
+                return;
+            }
 
             const h = Math.floor(diff / 3600).toString().padStart(2, '0');
             const m = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
             const s = (diff % 60).toString().padStart(2, '0');
 
             document.getElementById('timer').innerText = `${h}:${m}:${s}`;
-        }, 1000);
+        }
+
+        // 1 saniyede bir ekranı tazele (Sayfa yenilenmiş gibi olur ama veri kaybolmaz)
+        setInterval(updateDisplay, 1000);
+
     </script>
 </body>
 </html>
